@@ -1,0 +1,12 @@
+.DS_Store
+*/target/*
+.classpath
+.project
+.settings/
+target/
+.externalToolBuilders/
+.idea
+.idea/*
+*.iml
+node_modules
+npm-debug.log

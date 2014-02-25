@@ -1,0 +1,8 @@
+{
+    "oauth": {
+        "api_key": "<YOUR API KEY>",
+        "client_secret": "<YOUR CLIENT SECRET>",
+        "redirect_url": "http://localhost:3000/auth_token",
+        "scope": "read_products"
+    }
+}
