@@ -5,11 +5,15 @@
  * richard@codezuki.com
  */
 
-var express = require('express'),
+var bodyParser = require('body-parser'),
+    cookieParser = require('cookie-parser'),
+    cookieSession = require('cookie-session'),
+    express = require('express'),
     routes = require('./routes'),
     shopifyAuth = require('./routes/shopify_auth'),
     path = require('path'),
-    nconf = require('nconf');
+    nconf = require('nconf'),
+    morgan = require('morgan');
 
 //load settings from environment config
 nconf.argv().env().file({
@@ -21,15 +25,15 @@ exports.nconf = nconf;
 var app = express();
 
 //log all requests
-app.use(express.logger());
+app.use(morgan('combined'));
 
 //support json and url encoded requests
-app.use(express.json());
-app.use(express.urlencoded());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 
 //setup encrypted session cookies
-app.use(express.cookieParser());
-app.use(express.session({
+app.use(cookieParser());
+app.use(cookieSession({
     secret: "--express-session-encryption-key--"
 }));
 
