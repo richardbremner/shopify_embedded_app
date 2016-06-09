@@ -1,7 +1,11 @@
 {
+    "general": {
+        "title": "Shopify App",
+        "shop_name": "iqmetrix-2"
+    },
     "oauth": {
-        "api_key": "<YOUR API KEY>",
-        "client_secret": "<YOUR CLIENT SECRET>",
+        "api_key": "",
+        "client_secret": "",
         "redirect_url": "http://localhost:3000/auth_token",
         "scope": "read_products"
     }

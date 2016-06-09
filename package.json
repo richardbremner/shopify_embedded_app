@@ -11,8 +11,9 @@
     "cookie-session": "~1.2.0",
     "express": "~4.13.3",
     "jade": "*",
-    "oauth": "~0.9.14",
+    "morgan": "~1.6.1",
     "nconf": "~0.8.0",
-    "morgan": "~1.6.1"
+    "oauth": "~0.9.14",
+    "shopify-api-node": "^1.1.0"
   }
 }
