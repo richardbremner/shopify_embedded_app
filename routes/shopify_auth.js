@@ -62,7 +62,7 @@ exports.AppAuth = function() {
      */
     this.getAccessToken = function(req, res) {
         var parsedUrl= url.parse(req.originalUrl, true);
-
+        console.log(req.session.shopUrl);
         self.OAuth(req.session.shopUrl).getOAuthAccessToken(
             parsedUrl.query.code, {},
             function(error, access_token, refresh_token) {
