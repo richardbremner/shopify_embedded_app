@@ -1,7 +1,7 @@
 var app = require('../app'),
 	request = require("request");
 
-exports.getAccessToken = function(environment) {
+exports.getAccessToken = function(environment, callback) {
 	// var options = {
 	// 	protocol: 'https:',
 	// 	host: `accounts${env}.iqmetrix.net`,
@@ -49,6 +49,6 @@ exports.getAccessToken = function(environment) {
 		body = JSON.parse(body);
 		if (error)
 			throw new Error(error);
-		return (body['access_token']);
+		callback(body['access_token']);
 	});
 }

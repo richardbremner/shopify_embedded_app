@@ -5,6 +5,9 @@ const assign = require('lodash/assign');
 const path = require('path');
 const got = require('got');
 const fs = require('fs');
+const nconf = require('nconf');
+const FormData = require('form-data');
+const form = new FormData();
 
 
 /**
@@ -21,7 +24,7 @@ function iQmetrix(key, env) {
 
 	this.token = key;
 	this.environment = env;
-
+	this.languageCode = nconf.get('gereral:language_code');
 	this.baseUrl = {
 		environment: env,
 		protocol: 'https:',
@@ -34,44 +37,55 @@ function iQmetrix(key, env) {
  *
  * @param {Object} url URL object
  * @param {String} method HTTP method
- * @param {String} [key] Key name to use for req/res body
  * @param {Object} [params] Request body or query string if GET request
  * @return {Promise}
  * @private
  */
-iQmetrix.prototype.request = function request(url, method, key, params) {
+iQmetrix.prototype.request = function request(host, path, method, params, filePath) {
 	if (method == 'GET') {
-		url += '?' + querystring.stringify(data);
+		path += '?' + querystring.stringify(data);
 	}
 
-	headers = {
+	var headers = {
 		'Content-Type': 'application/json',
 		'Accept': 'application/json'
 	};
 
 	var options = {
+		protocol: this.baseUrl.protocol,
 		host: host,
-		path: url,
+		path: path,
 		method: method,
 		headers: headers
   	};
 
-
-	if (this.token) 
+	if (this.token) {
 		options.headers['Authorization'] = `Bearer ${this.token}`;
+	}
+
+	if(host.includes('productlibrary')) {
+		options.headers['Accept-Language'] = this.languageCode;
+	}
 
 	if (params) {
-		const body = key ? { [key]: params } : params;
+		const body = params;
 		options.body = JSON.stringify(body);
+	}else if(filePath) {
+		let fileName = filePath.substring(filePath.lastIndexOf('/'));
+		form.append(fileName, fs.createReadStream(filePath));
+		options.body = form;
+		options.headers.push(form.getHeaders());
 	}
 
 	return got(options).then(res => {
 		const body = res.body;
 
-		if (key) 
-			return body[key];
-		return body || {};
+		if (body)
+			return JSON.parse(body);
+		return {};
+
 	}, err => {
+		console.log(err);
 		return Promise.reject(err);
 	});
 };

@@ -1,7 +1,8 @@
 {
     "general": {
         "title": "Shopify App",
-        "shop_name": "iqmetrix-test-store"
+        "shop_name": "iqmetrix-test-store",
+        "language_code": "en-us"
     },
     "oauth": {
         "api_key": "69dc9b45b5fa56a380782e326d1fa642",
@@ -17,6 +18,7 @@
         "password": "Password123$"
     },
     "iq_settings": {
-        "companyId": "14146"
+        "companyId": "14146",
+        "locationId": "14192"
     }
 }

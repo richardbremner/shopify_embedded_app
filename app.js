@@ -17,8 +17,9 @@ var bodyParser = require('body-parser'),
 	iqmetrixAuth = require('./routes/iqmetrix_auth'),
 	Customer = require('./iqmetrix-api-node/resources/customer'),
 	iQmetrix = require('./iqmetrix-api-node'),
-	iqmetrixController = require('./iqmetrix-api-node/controllers/stuff'),
-	q = require('q');
+	iqmetrixController = require('./iqmetrix-api-node/mixins/stuff'),
+	q = require('q'),
+	CustomerMapper = require('./mappers/customer-mapper');
 
 //load settings from environment config
 nconf.argv().env().file({
@@ -54,17 +55,13 @@ var appAuth = new shopifyAuth.AppAuth();
 
 var iqmetrix;
 var customer;
-iqmetrixAuth.getAccessToken('demo').then(function(token){
+iqmetrixAuth.getAccessToken('demo', function(token){
 	console.log(token);
 	iqmetrix = new iQmetrix(token, 'demo');
-	customer = new Customer(iqmetrix);
-	customer.create({
-		"CustomerTypeId": 2
-	});
-})
-.then(function(value){
-	console.log(value);
-});  //.then(function(data){
+	cm = new CustomerMapper(iqmetrix);
+	cm.runTheTest();
+});
+  //.then(function(data){
 // 	console.log(data.value);
 // });
 iqmetrixController.getItems('asdfasdf');
