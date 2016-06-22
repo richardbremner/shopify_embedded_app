@@ -8,6 +8,7 @@ const fs = require('fs');
 const nconf = require('nconf');
 const FormData = require('form-data');
 const form = new FormData();
+const querystring = require('querystring');
 
 
 /**
@@ -42,8 +43,8 @@ function iQmetrix(key, env) {
  * @private
  */
 iQmetrix.prototype.request = function request(host, path, method, params, filePath) {
-	if (method == 'GET') {
-		path += '?' + querystring.stringify(data);
+	if (method == 'GET' && params) {
+		path += '?' + querystring.stringify(params);
 	}
 
 	var headers = {

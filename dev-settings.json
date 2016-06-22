@@ -1,24 +1,31 @@
 {
-    "general": {
-        "title": "Shopify App",
-        "shop_name": "iqmetrix-test-store",
-        "language_code": "en-us"
-    },
-    "oauth": {
-        "api_key": "69dc9b45b5fa56a380782e326d1fa642",
-        "client_secret": "f370e6140038477b392afddc3a1e8498",
-        "redirect_url": "http://localhost:3000/auth_token",
-        "scope": "read_products"
-    },
-    "iq_oauth": {
-        "grant_type": "password",
-        "client_id": "DANAPITEST",
-        "client_secret": "sFvbB356W4T8m21W934VAErg",
-        "username": "johnb@kentel.com",
-        "password": "Password123$"
-    },
-    "iq_settings": {
-        "companyId": "14146",
-        "locationId": "14192"
-    }
+	"general": {
+		"title": "Shopify App",
+		"shop_name": "iqmetrix-test-store",
+		"language_code": "en-us"
+	},
+	"oauth": {
+		"api_key": "69dc9b45b5fa56a380782e326d1fa642",
+		"client_secret": "f370e6140038477b392afddc3a1e8498",
+		"redirect_url": "http://localhost:3000/auth_token",
+		"scope": "read_content,write_content,read_products,write_products,read_customers,write_customers,read_orders,write_orders,read_shipping,write_shipping,read_analytics"
+	},
+	"iq_oauth": {
+		"grant_type": "password",
+		"client_id": "DANAPITEST",
+		"client_secret": "sFvbB356W4T8m21W934VAErg",
+		"username": "johnb@kentel.com",
+		"password": "Password123$"
+	},
+	"iq_settings": {
+		"companyId": "14146",
+		"locationId": "14192"
+	},
+	"regex": {
+		"postCode": {
+			"CA": "/([ABCEGHJKLMNPRSTVXY][0-9][ABCEGHJKLMNPRSTVWXYZ][0-9][ABCEGHJKLMNPRSTVWXYZ][0-9]$)/g",
+			"US": "/^\\d{5}$|^\\d{9}$/g",
+			"AU": "/^\\d{4}$/g"
+		}
+	}
 }

@@ -19,7 +19,8 @@ var bodyParser = require('body-parser'),
 	iQmetrix = require('./iqmetrix-api-node'),
 	iqmetrixController = require('./iqmetrix-api-node/mixins/stuff'),
 	q = require('q'),
-	CustomerMapper = require('./mappers/customer-mapper');
+	CustomerMapper = require('./mappers/customer-mapper'),
+	Shopify = require('shopify-api-node');
 
 //load settings from environment config
 nconf.argv().env().file({
@@ -55,11 +56,13 @@ var appAuth = new shopifyAuth.AppAuth();
 
 var iqmetrix;
 var customer;
+var shopify = new Shopify('iqmetrix-test-store', '8b8663edac84a60ebc856a90eb3bfecf');
 iqmetrixAuth.getAccessToken('demo', function(token){
 	console.log(token);
 	iqmetrix = new iQmetrix(token, 'demo');
-	cm = new CustomerMapper(iqmetrix);
-	cm.runTheTest();
+	cm = new CustomerMapper(iqmetrix, shopify);
+	//cm.runTheTest();
+	cm.syncCustomers(new Date('2015-06-13T15:33:50'));
 });
   //.then(function(data){
 // 	console.log(data.value);
