@@ -10,9 +10,13 @@
     "cookie-parser": "~1.4.0",
     "cookie-session": "~1.2.0",
     "express": "~4.13.3",
+    "form-data": "^1.0.0-rc4",
     "jade": "*",
-    "oauth": "~0.9.14",
+    "jslinq": "^1.0.15",
+    "linq": "^3.0.5",
+    "morgan": "~1.6.1",
     "nconf": "~0.8.0",
-    "morgan": "~1.6.1"
+    "oauth": "~0.9.14",
+    "shopify-api-node": "^1.1.0"
   }
 }
