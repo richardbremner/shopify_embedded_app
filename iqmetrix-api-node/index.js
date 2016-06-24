@@ -43,6 +43,7 @@ function iQmetrix(key, env) {
  * @private
  */
 iQmetrix.prototype.request = function request(host, path, method, params, filePath) {
+	console.log('iQmetrix doing a ' + method + ' at ' + path);
 	if (method == 'GET' && params) {
 		path += '?' + querystring.stringify(params);
 	}
@@ -81,8 +82,9 @@ iQmetrix.prototype.request = function request(host, path, method, params, filePa
 	return got(options).then(res => {
 		const body = res.body;
 
-		if (body)
+		if (body){
 			return JSON.parse(body);
+		}
 		return {};
 
 	}, err => {

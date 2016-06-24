@@ -1,5 +1,6 @@
 'use strict';
 const app = require('../app');
+const assign = require('lodash/assign');
 const iqCustomer = require('../iqmetrix-api-node/resources/customer');
 const iqCustomerAddress = require('../iqmetrix-api-node/resources/customer-address');
 const iqCustomerContactMethod = require('../iqmetrix-api-node/resources/customer-contact-method');
@@ -34,41 +35,6 @@ function CustomerMapper(iqmetrix, shopify){
 }
 
 /**
- * Performs a test on the CutomerMapper
- *
- * @public
- */
-CustomerMapper.prototype.runTheTest = function(){
-	// customerController.createCustomer({
-	// 	"CustomerTypeId": 2
-	// }).then(function(cust){
-	// 	console.log(cust);
-	// 	cust.Title = "newTitle";
-	// 	console.log('ABOUT TO UPDATE');
-	// 	return customerController.updateCustomer(cust);
-	// }).then(function(cust1){
-	// 	console.log(cust1);
-	// 	console.log('ABOUT TO DELETE');
-	// 	return customerController.deleteCustomer(cust1);
-	// }).then(function(){
-	// 	console.log('DELETED');
-	// })
-	getMappingFieldId().then(function(result){
-		console.log(result);
-	});
-	getMappingFieldId().then(function(result){
-		console.log(result);
-	});
-	getCustomersUpdated(new Date('2015-06-13T15:33:50')).then(function (res){
-		console.log(res);
-		hasMapping(res[0]).then(function(result){
-			console.log(result);
-			console.log(res[0]);
-		});
-	});
-};
-
-/**
  * Creates a Customer Mapper instance.
  *
  * @param {iqmetrix} iqmetrix Reference to the iQmetrix instance
@@ -76,7 +42,7 @@ CustomerMapper.prototype.runTheTest = function(){
  * @public
  */
 CustomerMapper.prototype.syncCustomers = function (time){
-	console.log('Start sync');
+	console.log('Doing customer sync');
 
 	var newCustomers;
 	var existingCustomers;
@@ -93,36 +59,34 @@ CustomerMapper.prototype.syncCustomers = function (time){
 	})
 	.then(function(result){
 		addressTypeId = result;
-		console.log('Map' + mappingFieldId);
-		console.log('CustType' + customerTypeId);
-		console.log('Address' + addressTypeId);	
 
 		//Get customers
 		return getCustomersUpdated(time)
 	})
 	.then(function (shopifyCustomers){
-		console.log('Determining updates or creates');
 		for(var i = 0; i < shopifyCustomers.length; ++i){
 			//Determine if new or existing customer
 			//Do insert or update accordingly
 			hasMapping(shopifyCustomers[i])
 			.then(function(result){
-				console.log('mapped = ' + result);
-				if(result){
-					console.log('about to update');
-					doUpdateCustomer(shopifyCustomers[i]);
+				if(result.mapped){
+					console.log('Doing customer update for ' + result.customer.id);
+					updateCustomer(result.customer);
 				}
 				else{
-					console.log('about to create');
-					doCreateCustomer(shopifyCustomers[i]);
+					console.log('Doing customer creation for ' + result.customer.id);
+					createCustomer(result.customer);
 				}
 			});
 		}
+		console.log('Customer sync complete');
 	});
 };
 
 /**
  * Gets the Mapping Field Id used for iQmetrix
+ *
+ * @return {Promise} 
  */
 function getMappingFieldId(){
 	return customerController.retrieveCustomerExtensionTypes()
@@ -136,6 +100,8 @@ function getMappingFieldId(){
 
 /**
  * Gets the Customer Type Id for the 'Person' type
+ *
+ * @return {Promise}
  */
 function getCustomerTypeId(){
 	return customerController.retrieveCustomerTypes()
@@ -149,6 +115,8 @@ function getCustomerTypeId(){
 
 /**
  * Gets the Address Type Id for the 'Shipping' type
+ *
+ * @return {Promise}
  */
 function getAddressTypeId(){
 	return addressController.retrieveAddressTypes()
@@ -160,16 +128,26 @@ function getAddressTypeId(){
 	});
 }
 
-
+/**
+ * Gets the shopify customers that have been updated since the time provided
+ *
+ * @param {Date} time 	Time to get updates from
+ * @return {Promise} Shopify Customers that have changes
+ */
 function getCustomersUpdated(time){
-	console.log(time);
 	return shopifyCustomerController.search().then(function(result){
-		return linq(result).where(function(x) {return new Date(x.updated_at) > time}).items;
+	 	return linq(result).where(function(x) {return new Date(x.updated_at) > time}).items;
 	});
 }
 
-function doCreateCustomer(shopifyCustomer){
-	console.log('Doing creation on ' + shopifyCustomer.id);
+/**
+ * Creates and maps a customer and their addresses to iQmetrix.
+ * Mapping to Shopify customer is in CustomerExtensions on the iQmetrix customer
+ * Mapping to iQmetrix customer is in metafields on the Shopify customer
+ *
+ * @param {Object} shopifyCustomer 	Customer to map
+ */
+function createCustomer(shopifyCustomer){
 	//Build the generic customer object for iQmetrix including mapping to Shopify customer ID
 	let newCustomer = {
 		PrimaryName: shopifyCustomer.first_name || '',
@@ -193,15 +171,16 @@ function doCreateCustomer(shopifyCustomer){
 			newCustomer.Addresses.push(iQAddressFromShopifyAddress(shopifyCustomer.addresses[i], shopifyCustomer.email));
 		}
 	}
-	
+
 	//Create and map customer
 	customerController.createCustomerFull(newCustomer)
 	.then(function(customer){
-		shopifyCustomerController.update(newCustomer.id, {
-			id: newCustomer.id,
+		console.log('Mapping ' + shopifyCustomer.id + ' to ' + customer.Id);
+		shopifyCustomerController.update(shopifyCustomer.id, {
+			id: shopifyCustomer.id,
 			metafields: [
 				{
-					key: 'iqmetrixidentifier',
+					key: app.nconf.get('iq_settings:mappingFieldName'),
 					value: customer.Id,
 					value_type: 'string',
 					namespace: 'global'
@@ -212,11 +191,14 @@ function doCreateCustomer(shopifyCustomer){
 }
 
 /**
+ * Updates a shopify customer and their addresses for iQmetrix.
+ *
  * NOTE: 
- *	shopifyCustomer must have 'metafields' property
+ *	shopifyCustomer must have 'metafields' property added to it prior to function.
+ *
+ * @param {Object} shopifyCustomer 	Customer to update
  */
-function doUpdateCustomer(shopifyCustomer){
-	console.log('Doing update on ' + shopifyCustomer.id);
+function updateCustomer(shopifyCustomer){
 	var iqmetrixCustomerId = linq(shopifyCustomer.metafields)
 		.firstOrDefault(function(x) {return x.key === 'iqmetrixidentifier'}).value;
 
@@ -226,11 +208,12 @@ function doUpdateCustomer(shopifyCustomer){
 
 	customerController.retrieveCustomerFull(iqmetrixCustomerId)
 	.then(function (customerFull){
+		//Update Addresses
 		iqmetrixAddresses = customerFull.Addresses;
 
 		//Go through shopify addresses to find new ones
 		for (var i = 0; i < shopifyAddresses.length; ++i){
-			var postCode = getValidPostCode(shopifyAddresses[i].zip, shopifyAddresses[i].country_code);
+			var postCode = getValidPostCode(shopifyAddresses[i]);
 			if(!linq(iqmetrixAddresses)
 				.any(function(x) {
 					return x.StreetAddress1 === shopifyAddresses[i].address1 && 
@@ -254,7 +237,7 @@ function doUpdateCustomer(shopifyCustomer){
 					iqmetrixAddresses[i].StreetAddress2 === x.address2 &&
 					iqmetrixAddresses[i].StateCode === x.province_code && 
 					iqmetrixAddresses[i].State === x.province && 
-					(iqmetrixAddresses[i].PostalCode === postCode || iqmetrixAddresses[i].PostalCode === '') && 
+					iqmetrixAddresses[i].PostalCode === postCode && 
 					iqmetrixAddresses[i].CountryCode === x.country_code && 
 					iqmetrixAddresses[i].Country === x.country
 				})
@@ -265,46 +248,85 @@ function doUpdateCustomer(shopifyCustomer){
 
 		//Do all creations and deletions for addresses necessary
 		for (var i = 0; i < toCreate.length; ++i){
-			addressController.createAddress(iQAddressFromShopifyAddress(toCreate[i], shopifyCustomer.email));
+			addressController.createAddress(iQAddressFromShopifyAddress(toCreate[i], shopifyCustomer.email, 
+				customerFull.Id));
 		}
 
 		for (var i = 0; i < toDelete.length; ++i){
 			addressController.deleteAddress(toDelete[i]);
 		}
+
+		//Update customer itself
+		if(customerFull.PrimaryName !== shopifyCustomer.first_name ||
+			customerFull.FamilyName !== shopifyCustomer.last_name
+		){
+			customerController.updateCustomer({
+				Id: customerFull.Id,
+				CustomerTypeId: customerTypeId,
+				PrimaryName: shopifyCustomer.first_name,
+				FamilyName: shopifyCustomer.last_name
+			});
+		}
+		console.log('All Customer Update calls made for ' + shopifyCustomer.id);
 	});
 }
 
 /**
- * Checkes if a shopify customer has a mapping.
+ * Checks if a shopify customer has a mapping.
  * Adds metafields for the customer to the customer object.
+ *
+ * @param {Object} shopifyCustomer 	customer mapping is checked for
+ * @return {Promise} Object with bool 'mapped' property and adjusted 'customer'
  */
 function hasMapping(shopifyCustomer){
-	console.log('Checking mapping on ' + shopifyCustomer.id);
 	return shopifyCustomerController.retrieveMetaFields(shopifyCustomer.id)
 	.then(function (metafields){
 		shopifyCustomer.metafields = metafields;
-		return linq(metafields).any(function(x) {return x.key === 'iqmetrixidentifier'});
+		return { 
+			mapped: linq(metafields).any(function(x) {return x.key === 'iqmetrixidentifier'}),
+			customer: shopifyCustomer
+		};
 	});
 }
 
 /**
  * Validates a postcode and countrycode pair to ensure a valid postcode is returned.
  * If the postcode is invalid then '' is returned.
+ *
+ * @param {Object} shopifyAddress 	Address to check post code on
+ * @return {String} Valid post code
  */
-function getValidPostCode(postCode, countryCode){
+function getValidPostCode(shopifyAddress){
+	var postCode = shopifyAddress.zip;
+	var countryCode = shopifyAddress.country_code;
 	var result = postCode;
 	if(countryCode === 'CA' || countryCode === 'US' || countryCode === 'AU'){
-		var regex = new RegExp(app.nconf.get(`regex:postCode:${countryCode}`));
+		var regex = app.regex.postCode[countryCode];
 		if (!regex.test(postCode)){
 			result = '';
 		}
+		regex.lastIndex = 0;
+		result.replace(' ', '').replace('-', '');
 	}
 	return result;
 }
 
-function iQAddressFromShopifyAddress(shopifyAddress, email){
-	var postCode = getValidPostCode(shopifyAddress.zip, shopifyAddress.country_code);
-	return {
+/**
+ * Creates an equivalent customer address for iQmetrix from an address on a
+ * shopify customer.
+ * 
+ * NOTE: 
+ * 	If performing an update with the address returned, the customerId parameter
+ *	must be included, otherwise it is unnecessary.
+ *
+ * @param {Object} shopifyAddress 			Shopify address to get data from
+ * @param {String} email (optional)			Email for address
+ * @param {String} customerId (see NOTE)	Customer ID for updating an existing address
+ * @return {Object} Customer Address for iQmetrix
+ */
+function iQAddressFromShopifyAddress(shopifyAddress, email, customerId){
+	var postCode = getValidPostCode(shopifyAddress);
+	var address = {
 		AddressTypeId: addressTypeId,
 		CountryCode: shopifyAddress.country_code,
 		Country: shopifyAddress.country,
@@ -317,6 +339,10 @@ function iQAddressFromShopifyAddress(shopifyAddress, email){
 		StreetAddress1: shopifyAddress.address1 || '',
 		StreetAddress2: shopifyAddress.address2 || ''
 	};
+	if(customerId){
+		address.CustomerId = customerId;
+	}
+	return address;
 }
 
 module.exports = CustomerMapper;

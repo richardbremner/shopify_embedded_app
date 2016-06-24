@@ -28,6 +28,15 @@ nconf.argv().env().file({
 });
 exports.nconf = nconf;
 
+const regex = {
+	postCode: {
+		CA: /^([ABCEGHJKLMNPRSTVXY][0-9][ABCEGHJKLMNPRSTVWXYZ][\s\-]?[0-9][ABCEGHJKLMNPRSTVWXYZ][0-9]$)/g,
+		US: /^\d{5}$|^\d{9}$/g,
+		AU: /^\d{4}$/g
+	}
+}
+exports.regex = regex;
+
 //configure express
 var app = express();
 
@@ -62,7 +71,7 @@ iqmetrixAuth.getAccessToken('demo', function(token){
 	iqmetrix = new iQmetrix(token, 'demo');
 	cm = new CustomerMapper(iqmetrix, shopify);
 	//cm.runTheTest();
-	cm.syncCustomers(new Date('2015-06-13T15:33:50'));
+	cm.syncCustomers(new Date('2016-06-22T15:24:40-04:00'));
 });
   //.then(function(data){
 // 	console.log(data.value);
